@@ -16,7 +16,7 @@ use Mouse::Exporter;
 
 Mouse::Exporter->setup_import_methods( as_is => ['tmsg'] );
 
-our $VERSION = 0.01_01;
+our $VERSION = 0.01_02;
 
 has queue          => ( is => 'rw' );
 has task           => ( is => 'rw', required => 1 );
@@ -211,7 +211,7 @@ Spits out the C<$string_message> in the form:
 
     [thread_id] <message>
 
-thread_id is by default C<threads->tid>, but you can also set it artificially
+thread_id is by default C<< threads->tid >>, but you can also set it artificially
 via the C<$tid_to_display> variable.
 
 =back
