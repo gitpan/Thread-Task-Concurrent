@@ -16,7 +16,7 @@ use Mouse::Exporter;
 
 Mouse::Exporter->setup_import_methods( as_is => ['tmsg'] );
 
-our $VERSION = 0.01_02;
+our $VERSION = 0.01_03;
 
 has queue          => ( is => 'rw' );
 has task           => ( is => 'rw', required => 1 );

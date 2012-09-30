@@ -14,7 +14,7 @@ my $builder = Module::Build->new(
         'Mouse'           => 0,
         'Mouse::Exporter' => 0,
         'Thread::Queue'   => 0,
-        'perl'            => '5.10.0',
+        'perl'            => '5.010',
     },
     build_requires     => { 'Test::More' => 0, },
     add_to_cleanup     => ['Thread-Task-*'],
