@@ -1,10 +1,10 @@
-use threads;
 use Test::More;
 
 BEGIN {
     use Config;
     plan skip_all => "Perl not compiled with 'useithreads'\n"
         if ( !$Config{'useithreads'} );
+    eval 'use threads; 1' or die "could not load threads module";
 
     use_ok( 'Thread::Task::Concurrent', 'tmsg' );
 }

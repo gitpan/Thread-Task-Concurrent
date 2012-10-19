@@ -1,32 +1,43 @@
 package Thread::Task::Concurrent;
 
-use threads;
-use threads::shared;
-
-use Mouse;
-
 use warnings;
 use strict;
+use 5.010;
+
+my $can_use_threads = $threads::threads;
+
+use threads::shared;
+
 use Thread::Queue;
 use Thread::Task::Concurrent::Util qw/unshared_clone/;
 
-use 5.010;
+my ($tmsg_sub);
+
+if ($can_use_threads) {
+    $tmsg_sub = sub { say STDERR '[' . ( $_[1] // threads->tid ) . '] ' . $_[0]; };
+} else {
+    warn "threads module not loaded, working in serial mode";
+    $tmsg_sub = sub { say STDERR '[' . ( $_[1] // "main" ) . '] ' . $_[0]; }
+}
+
+use Mouse;
 
 use Mouse::Exporter;
 
 Mouse::Exporter->setup_import_methods( as_is => ['tmsg'] );
 
-our $VERSION = 0.01_03;
+our $VERSION = 0.01_04;
 
-has queue          => ( is => 'rw' );
-has task           => ( is => 'rw', required => 1 );
-has arg            => ( is => 'rw' );
-has max_instances  => ( is => 'rw', default => 4 );
-has threads        => ( is => 'rw' );
-has verbose        => ( is => 'rw' );
-has result_queue   => ( is => 'rw' );
-has finished       => ( is => 'rw' );
-has _start_time => (is => 'rw');
+has queue         => ( is => 'rw' );
+has task          => ( is => 'rw', required => 1 );
+has arg           => ( is => 'rw' );
+has max_instances => ( is => 'rw', default => 4 );
+has threads       => ( is => 'rw' );
+has verbose       => ( is => 'rw' );
+has result_queue  => ( is => 'rw' );
+has finished      => ( is => 'rw' );
+has _start_time   => ( is => 'rw' );
+has _real_task    => ( is => 'rw' );
 
 sub BUILD {
     my ($self) = @_;
@@ -52,7 +63,7 @@ sub BUILD {
         my $rq = $self->result_queue;
 
         my $task = $self->task;
-        my $arg = shared_clone( $self->arg );
+        my $arg  = shared_clone( $self->arg );
 
         $tasks_running = 0;
 
@@ -94,8 +105,11 @@ sub BUILD {
             }
         };
 
+        $self->_real_task($real_task);
         my @threads;
         for ( my $i = 0; $i < $self->max_instances; $i++ ) {
+            # early exit if no threads are loaded/supported
+            last unless ($can_use_threads);
             push @threads, threads->create($real_task);
 
         }
@@ -114,6 +128,7 @@ sub BUILD {
 
         my $threads = $self->threads;
         for my $t (@$threads) {
+
             #broadcast as much as possible, so no thread gets stuck
             {
                 lock($wait);
@@ -123,8 +138,14 @@ sub BUILD {
             $t->join;
             tmsg( "thread " . $t->tid . " joined successfully", 'main' ) if ( $self->verbose );
         }
+
+        #execute task if we have no thread support (@$threads is empty)
+        $self->_real_task->() unless ($can_use_threads);
+
         $self->finished(1);
-        tmsg( "time: " .  sprintf( "%dd %dh %dm %ds", ( gmtime( time - $self->_start_time) )[ 7, 2, 1, 0 ] ), 'main' ) if($self->verbose);
+        tmsg( "time: " . sprintf( "%dd %dh %dm %ds", ( gmtime( time - $self->_start_time ) )[ 7, 2, 1, 0 ] ),
+            'main' )
+            if ( $self->verbose );
         $self;
     }
 
@@ -156,11 +177,7 @@ sub BUILD {
     }
 }
 
-sub tmsg {
-    my ( $msg, $tid ) = @_;
-
-    say STDERR '[' . ( $tid // threads->tid ) . '] ' . $msg;
-}
+sub tmsg { return $tmsg_sub->(@_); }
 
 __PACKAGE__->meta->make_immutable;
 

@@ -3,8 +3,8 @@ package Thread::Task::Concurrent::Util;
 use warnings;
 use strict;
 
-use threads;
 use threads::shared;
+
 use Scalar::Util qw/refaddr reftype blessed/;
 
 use base 'Exporter';
