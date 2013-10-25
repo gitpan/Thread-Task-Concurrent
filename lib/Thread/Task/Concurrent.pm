@@ -26,7 +26,7 @@ use Mouse::Exporter;
 
 Mouse::Exporter->setup_import_methods( as_is => ['tmsg'] );
 
-our $VERSION = 0.01_04;
+our $VERSION = 0.01_05;
 
 has queue         => ( is => 'rw' );
 has task          => ( is => 'rw', required => 1 );
@@ -63,7 +63,7 @@ sub BUILD {
         my $rq = $self->result_queue;
 
         my $task = $self->task;
-        my $arg  = shared_clone( $self->arg );
+        my $arg  = $self->arg;
 
         $tasks_running = 0;
 
